@@ -81,8 +81,11 @@ export class QueryBuilder {
       const field = this.sortField
       const dir = this.sortDir
       results = [...results].sort((a, b) => {
-        const av = a[field] as number | string
-        const bv = b[field] as number | string
+        const av = a[field] as number | string | null | undefined
+        const bv = b[field] as number | string | null | undefined
+        if (av == null && bv == null) return 0
+        if (av == null) return dir === 'asc' ? 1 : -1
+        if (bv == null) return dir === 'asc' ? -1 : 1
         if (av === bv) return 0
         const lt = av < bv ? -1 : 1
         return dir === 'asc' ? lt : -lt

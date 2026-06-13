@@ -6,10 +6,10 @@ export type FlatRecord = {
 }
 
 export type FilterOperators = {
-  $gt?: unknown
-  $gte?: unknown
-  $lt?: unknown
-  $lte?: unknown
+  $gt?: number | string
+  $gte?: number | string
+  $lt?: number | string
+  $lte?: number | string
   $ne?: unknown
   $includes?: unknown
   $exists?: boolean
