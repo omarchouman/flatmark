@@ -15,9 +15,14 @@ export type FilterOperators = {
   $exists?: boolean
 }
 
-export type WhereFilter = Record<string, unknown>
+export type WhereFilter = Record<string, unknown | FilterOperators>
 
 export type OrderByDirection = 'asc' | 'desc'
+
+export type ValidationIssue = {
+  path: (string | number)[]
+  message: string
+}
 
 export type CollectionOptions = {
   schema?: { parse: (data: unknown) => unknown }
