@@ -144,3 +144,67 @@ describe('QueryBuilder — operators', () => {
     expect(result.map(r => r._id)).toEqual(['b'])
   })
 })
+
+const pagedRecords: FlatRecord[] = [
+  { _id: 'a', _path: '/a.md', _body: '', title: 'Zebra', views: 10 },
+  { _id: 'b', _path: '/b.md', _body: '', title: 'Apple', views: 30 },
+  { _id: 'c', _path: '/c.md', _body: '', title: 'Mango', views: 20 },
+  { _id: 'd', _path: '/d.md', _body: '', title: 'Berry', views: 40 },
+]
+
+describe('QueryBuilder — select, orderBy, limit, offset', () => {
+  it('select() returns only the specified fields plus _id and _path', () => {
+    const result = new QueryBuilder(pagedRecords).select(['title']).get()
+    expect(Object.keys(result[0])).toEqual(['_id', '_path', 'title'])
+  })
+
+  it('select() strips _body when not requested', () => {
+    const result = new QueryBuilder(pagedRecords).select(['views']).get()
+    result.forEach(r => {
+      expect(r).toHaveProperty('_id')
+      expect(r).toHaveProperty('_path')
+      expect(r).not.toHaveProperty('_body')
+    })
+  })
+
+  it('orderBy() sorts ascending by default', () => {
+    const result = new QueryBuilder(pagedRecords).orderBy('title').get()
+    expect(result.map(r => r.title)).toEqual(['Apple', 'Berry', 'Mango', 'Zebra'])
+  })
+
+  it('orderBy() sorts descending', () => {
+    const result = new QueryBuilder(pagedRecords).orderBy('views', 'desc').get()
+    expect(result.map(r => r.views)).toEqual([40, 30, 20, 10])
+  })
+
+  it('orderBy() places records with missing sort field last (ascending)', () => {
+    const withMissing: FlatRecord[] = [
+      { _id: 'x', _path: '/x.md', _body: '', title: 'Bravo' },
+      { _id: 'y', _path: '/y.md', _body: '' },
+      { _id: 'z', _path: '/z.md', _body: '', title: 'Alpha' },
+    ]
+    const result = new QueryBuilder(withMissing).orderBy('title').get()
+    expect(result.map(r => r._id)).toEqual(['z', 'x', 'y'])
+  })
+
+  it('limit() returns at most n records', () => {
+    const result = new QueryBuilder(pagedRecords).limit(2).get()
+    expect(result).toHaveLength(2)
+  })
+
+  it('offset() skips the first n records', () => {
+    const result = new QueryBuilder(pagedRecords).offset(2).get()
+    expect(result).toHaveLength(2)
+    expect(result[0]._id).toBe('c')
+  })
+
+  it('limit() + offset() pages correctly', () => {
+    const page2 = new QueryBuilder(pagedRecords).limit(2).offset(2).get()
+    expect(page2.map(r => r._id)).toEqual(['c', 'd'])
+  })
+
+  it('orderBy + limit together', () => {
+    const result = new QueryBuilder(pagedRecords).orderBy('views', 'desc').limit(2).get()
+    expect(result.map(r => r._id)).toEqual(['d', 'b'])
+  })
+})
