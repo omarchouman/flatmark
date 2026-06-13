@@ -76,3 +76,71 @@ describe('QueryBuilder — exact match', () => {
     expect(result).toBe(2)
   })
 })
+
+const numericRecords: FlatRecord[] = [
+  { _id: 'a', _path: '/a.md', _body: '', views: 50, date: '2024-01-01', status: 'published', tags: ['ts', 'js'] },
+  { _id: 'b', _path: '/b.md', _body: '', views: 200, date: '2024-06-01', status: 'draft', tags: ['ts'] },
+  { _id: 'c', _path: '/c.md', _body: '', views: 1000, date: '2023-12-01', status: 'published', tags: ['rust'] },
+]
+
+describe('QueryBuilder — operators', () => {
+  it('$gt filters records where field > value', () => {
+    const result = new QueryBuilder(numericRecords).where({ views: { $gt: 100 } }).get()
+    expect(result.map(r => r._id)).toEqual(['b', 'c'])
+  })
+
+  it('$gte filters records where field >= value', () => {
+    const result = new QueryBuilder(numericRecords).where({ views: { $gte: 200 } }).get()
+    expect(result.map(r => r._id)).toEqual(['b', 'c'])
+  })
+
+  it('$lt filters records where field < value', () => {
+    const result = new QueryBuilder(numericRecords).where({ views: { $lt: 200 } }).get()
+    expect(result.map(r => r._id)).toEqual(['a'])
+  })
+
+  it('$lte filters records where field <= value', () => {
+    const result = new QueryBuilder(numericRecords).where({ views: { $lte: 200 } }).get()
+    expect(result.map(r => r._id)).toEqual(['a', 'b'])
+  })
+
+  it('$ne filters records where field !== value', () => {
+    const result = new QueryBuilder(numericRecords).where({ status: { $ne: 'draft' } }).get()
+    expect(result.map(r => r._id)).toEqual(['a', 'c'])
+  })
+
+  it('$includes filters records where array field contains value', () => {
+    const result = new QueryBuilder(numericRecords).where({ tags: { $includes: 'ts' } }).get()
+    expect(result.map(r => r._id)).toEqual(['a', 'b'])
+  })
+
+  it('$includes returns empty when field is not an array', () => {
+    const result = new QueryBuilder(numericRecords).where({ status: { $includes: 'pub' } }).get()
+    expect(result).toHaveLength(0)
+  })
+
+  it('$exists: true filters records where field is present', () => {
+    const mixed: FlatRecord[] = [
+      { _id: 'x', _path: '/x.md', _body: '', hero: 'img.jpg' },
+      { _id: 'y', _path: '/y.md', _body: '' },
+    ]
+    const result = new QueryBuilder(mixed).where({ hero: { $exists: true } }).get()
+    expect(result.map(r => r._id)).toEqual(['x'])
+  })
+
+  it('$exists: false filters records where field is absent', () => {
+    const mixed: FlatRecord[] = [
+      { _id: 'x', _path: '/x.md', _body: '', hero: 'img.jpg' },
+      { _id: 'y', _path: '/y.md', _body: '' },
+    ]
+    const result = new QueryBuilder(mixed).where({ hero: { $exists: false } }).get()
+    expect(result.map(r => r._id)).toEqual(['y'])
+  })
+
+  it('multiple operators on same field are ANDed', () => {
+    const result = new QueryBuilder(numericRecords)
+      .where({ views: { $gte: 100, $lt: 500 } })
+      .get()
+    expect(result.map(r => r._id)).toEqual(['b'])
+  })
+})
