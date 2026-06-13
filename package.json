@@ -2,10 +2,11 @@
   "name": "flatmark",
   "version": "0.1.0",
   "description": "A query engine that treats markdown files as a database",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.cts",
   "exports": {
     ".": {
       "import": {
@@ -41,10 +42,16 @@
     "@types/node": "^20.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
-    "vitest": "^1.0.0",
+    "vitest": "^2.0.0",
     "zod": "^3.0.0"
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "keywords": ["markdown", "frontmatter", "query", "database", "cms"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/omarchouman/flatmark.git"
+  },
+  "homepage": "https://github.com/omarchouman/flatmark"
 }

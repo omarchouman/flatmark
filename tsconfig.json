@@ -5,12 +5,8 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2020"],
     "strict": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "./dist",
     "rootDir": "./src"
   },
   "include": ["src/**/*"],
