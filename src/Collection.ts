@@ -3,7 +3,7 @@ import path from 'node:path'
 import matter from 'gray-matter'
 import { parseMarkdownFile } from './Parser'
 import { QueryBuilder } from './QueryBuilder'
-import { FlatMarkNotFoundError, FlatMarkValidationError } from './errors'
+import { FlatMarkError, FlatMarkNotFoundError, FlatMarkValidationError } from './errors'
 import type { FlatRecord, WhereFilter, CollectionOptions } from './types'
 
 export class Collection {
@@ -16,6 +16,7 @@ export class Collection {
   ) {}
 
   async load(): Promise<void> {
+    this.index = []
     const entries = await fs.readdir(this.dir, { withFileTypes: true })
     const mdFiles = entries
       .filter(e => e.isFile() && e.name.endsWith('.md'))
@@ -44,11 +45,11 @@ export class Collection {
   }
 
   where(filter: WhereFilter): QueryBuilder {
-    return new QueryBuilder(this.index).where(filter)
+    return new QueryBuilder([...this.index]).where(filter)
   }
 
   query(): QueryBuilder {
-    return new QueryBuilder(this.index)
+    return new QueryBuilder([...this.index])
   }
 
   private validate(data: unknown): void {
@@ -66,13 +67,15 @@ export class Collection {
 
   async insert(record: Partial<FlatRecord> & { _id: string }): Promise<FlatRecord> {
     const { _id, _body = '', _path: _ignoredPath, ...frontmatter } = record
+    if (this.index.some(r => r._id === _id)) {
+      throw new FlatMarkError(`Record "${_id}" already exists in collection "${this.name}"`)
+    }
     this.validate(frontmatter)
 
     const filePath = path.join(this.dir, `${_id}.md`)
     const fileContent = matter.stringify(_body, frontmatter as Record<string, unknown>)
-    await fs.writeFile(filePath, fileContent, 'utf-8')
-
     const parsed = parseMarkdownFile(filePath, fileContent)
+    await fs.writeFile(filePath, fileContent, 'utf-8')
     this.index.push(parsed)
     return parsed
   }
@@ -89,9 +92,8 @@ export class Collection {
 
     const updatedBody = newBody ?? existingBody
     const fileContent = matter.stringify(updatedBody, mergedFrontmatter as Record<string, unknown>)
-    await fs.writeFile(existing._path, fileContent, 'utf-8')
-
     const parsed = parseMarkdownFile(existing._path, fileContent)
+    await fs.writeFile(existing._path, fileContent, 'utf-8')
     const idx = this.index.findIndex(r => r._id === _id)
     this.index[idx] = parsed
     return parsed
