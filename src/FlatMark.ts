@@ -88,6 +88,8 @@ export class FlatMark {
         if (!filePath.endsWith('.md')) return
         getCollection(filePath)?.removeRecord(filePath)
       })
+
+    await new Promise<void>(resolve => this.watcher!.on('ready', resolve))
   }
 
   async close(): Promise<void> {

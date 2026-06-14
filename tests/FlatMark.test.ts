@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { FlatMark } from '../src/FlatMark'
 import { FlatMarkCollectionError } from '../src/errors'
 import { createTempDir, writeMarkdown, removeTempDir } from './helpers'
@@ -86,5 +87,46 @@ describe('FlatMark', () => {
 
     await db.collection('posts').delete('temp')
     expect(db.collection('posts').query().count()).toBe(0)
+  })
+})
+
+describe('FlatMark — file watcher', () => {
+  it('watch mode picks up a new .md file added after load()', async () => {
+    await fs.mkdir(path.join(tmpDir, 'posts'))
+
+    const db = new FlatMark(tmpDir)
+    await db.load({ watch: true })
+
+    expect(db.collection('posts').query().count()).toBe(0)
+
+    await writeMarkdown(
+      path.join(tmpDir, 'posts'),
+      'live-post.md',
+      `---\ntitle: Live Post\n---\n`
+    )
+
+    await sleep(300)
+
+    expect(db.collection('posts').query().count()).toBe(1)
+    expect(db.collection('posts').where({ title: 'Live Post' }).first()).not.toBeNull()
+
+    await db.close()
+  })
+
+  it('watch mode removes a deleted .md file from the index', async () => {
+    await fs.mkdir(path.join(tmpDir, 'posts'))
+    await writeMarkdown(path.join(tmpDir, 'posts'), 'to-delete.md', `---\ntitle: Delete Me\n---\n`)
+
+    const db = new FlatMark(tmpDir)
+    await db.load({ watch: true })
+
+    expect(db.collection('posts').query().count()).toBe(1)
+
+    await fs.unlink(path.join(tmpDir, 'posts', 'to-delete.md'))
+    await sleep(300)
+
+    expect(db.collection('posts').query().count()).toBe(0)
+
+    await db.close()
   })
 })
