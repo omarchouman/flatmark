@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import { z } from 'zod'
 import { Collection } from '../src/Collection'
 import { FlatMarkNotFoundError, FlatMarkValidationError } from '../src/errors'
 import { createTempDir, writeMarkdown, removeTempDir } from './helpers'
@@ -174,5 +175,59 @@ describe('Collection — delete', () => {
     await coll.load()
 
     await expect(coll.delete('ghost')).rejects.toThrow(FlatMarkNotFoundError)
+  })
+})
+
+describe('Collection — schema validation', () => {
+  const PostSchema = z.object({
+    title: z.string(),
+    date: z.string(),
+    draft: z.boolean(),
+  })
+
+  it('insert() throws FlatMarkValidationError when frontmatter fails schema', async () => {
+    const coll = new Collection(tmpDir, 'posts', { schema: PostSchema })
+    await coll.load()
+
+    await expect(
+      coll.insert({ _id: 'bad-post', title: 'Missing date and draft', _body: '' })
+    ).rejects.toThrow(FlatMarkValidationError)
+  })
+
+  it('insert() succeeds when frontmatter passes schema', async () => {
+    const coll = new Collection(tmpDir, 'posts', { schema: PostSchema })
+    await coll.load()
+
+    const record = await coll.insert({
+      _id: 'good-post',
+      title: 'Good Post',
+      date: '2024-01-01',
+      draft: false,
+      _body: '',
+    })
+    expect(record._id).toBe('good-post')
+  })
+
+  it('update() throws FlatMarkValidationError when merged data fails schema', async () => {
+    await writeMarkdown(
+      tmpDir,
+      'post-1.md',
+      `---\ntitle: Post 1\ndate: '2024-01-01'\ndraft: false\n---\n`
+    )
+    const coll = new Collection(tmpDir, 'posts', { schema: PostSchema })
+    await coll.load()
+
+    await expect(
+      coll.update('post-1', { date: 123 as unknown as string })
+    ).rejects.toThrow(FlatMarkValidationError)
+  })
+
+  it('no schema = no validation on insert', async () => {
+    const coll = new Collection(tmpDir, 'posts')
+    await coll.load()
+
+    await expect(
+      coll.insert({ _id: 'any-post', _body: '' })
+    ).resolves.toBeTruthy()
   })
 })
