@@ -30,7 +30,7 @@ Think SQLite but for markdown.
 ## Install
 
 ```bash
-npm install flatmark
+npm install @flatmark/core
 ```
 
 ---
@@ -71,7 +71,7 @@ Frontmatter uses YAML — compatible with Obsidian, Hugo, Astro, Jekyll, and mos
 ### Init
 
 ```ts
-import { FlatMark } from 'flatmark'
+import { FlatMark } from '@flatmark/core'
 
 const db = new FlatMark('./content')
 await db.load()
@@ -227,7 +227,7 @@ All errors throw. No result objects.
 | `FlatMarkCollectionError` | `.collection()` called with a name that has no matching directory |
 
 ```ts
-import { FlatMarkNotFoundError } from 'flatmark'
+import { FlatMarkNotFoundError } from '@flatmark/core'
 
 try {
   await db.collection('posts').update('ghost', { draft: false })

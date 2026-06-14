@@ -143,7 +143,7 @@ No conventional commit prefixes required.
 
 Open an issue on [GitHub](https://github.com/omarchouman/flatmark/issues) with:
 
-- **flatmark version** (`npm list flatmark`)
+- **flatmark version** (`npm list @flatmark/core`)
 - **Node.js version** (`node --version`)
 - **What you expected to happen**
 - **What actually happened**
