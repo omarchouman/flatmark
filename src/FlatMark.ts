@@ -14,6 +14,7 @@ export class FlatMark {
   ) {}
 
   async load(loadOptions: LoadOptions = {}): Promise<void> {
+    this.collections.clear()
     const entries = await fs.readdir(this.basePath, { withFileTypes: true })
 
     const hasMdAtRoot = entries.some(e => e.isFile() && e.name.endsWith('.md'))
@@ -49,6 +50,7 @@ export class FlatMark {
   }
 
   private async startWatcher(): Promise<void> {
+    await this.watcher?.close()
     const { default: chokidar } = await import('chokidar')
 
     this.watcher = chokidar.watch(this.basePath, {
@@ -66,13 +68,21 @@ export class FlatMark {
     this.watcher
       .on('add', async (filePath: string) => {
         if (!filePath.endsWith('.md')) return
-        const content = await fs.readFile(filePath, 'utf-8')
-        getCollection(filePath)?.updateRecord(filePath, content)
+        try {
+          const content = await fs.readFile(filePath, 'utf-8')
+          getCollection(filePath)?.updateRecord(filePath, content)
+        } catch {
+          // file disappeared between event and read
+        }
       })
       .on('change', async (filePath: string) => {
         if (!filePath.endsWith('.md')) return
-        const content = await fs.readFile(filePath, 'utf-8')
-        getCollection(filePath)?.updateRecord(filePath, content)
+        try {
+          const content = await fs.readFile(filePath, 'utf-8')
+          getCollection(filePath)?.updateRecord(filePath, content)
+        } catch {
+          // file disappeared between event and read
+        }
       })
       .on('unlink', (filePath: string) => {
         if (!filePath.endsWith('.md')) return
